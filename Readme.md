@@ -10,6 +10,13 @@
 
 ## Step 2: Compile and Deploy the Smart Contract
 
+### Rust: You need to have rust 1.80 or newer to be able to compile your contract:
+
+```bash
+rustup install 1.81
+rustup default 1.81
+rustup target add wasm32-unknown-unknown
+```
 ### Compile the smart contract by running the following command:
 
 ```bash
