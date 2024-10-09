@@ -3,11 +3,15 @@
 To install the dependencies you need to put in the console: 
 
 ```bash
-yarn
+yarn install
 ```
 
 And to run the frontend you have to use:
 
+```bash
+yarn dev
+```
+or
 ```bash
 yarn start
 ```
