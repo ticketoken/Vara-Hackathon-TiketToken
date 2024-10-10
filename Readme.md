@@ -26,7 +26,7 @@ cargo build --release
 Once the compilation is complete, locate the `*.opt.wasm` file in the `target/wasm32-unknown-unknown/release` directory.
 
 
-## Step 2: Interact with Your Contract on Vara Network
+## Step 3: Interact with Your Contract on Vara Network
 
 1. To interact with the Gear IDEA and deploy your contract, you will need to download a wallet extension such as [Polkadot-JS](https://polkadot.js.org/extension/), [Talisman](https://talisman.xyz/), or [Subwallet](https://subwallet.app/) to interact with Substrate-based chains.
 
@@ -35,7 +35,7 @@ Once the compilation is complete, locate the `*.opt.wasm` file in the `target/wa
 </div>
 
 
-## Step 3: Interact with Your Contract on Vara Network
+## Step 4: Interact with Your Contract on Vara Network
 
 1. Access [Gear IDE](https://idea.gear-tech.io/programs?node=wss%3A%2F%2Frpc.vara.network) using your web browser.
 2. Connect your Substrate wallet to Gear IDE.
