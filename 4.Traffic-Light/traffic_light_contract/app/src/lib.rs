@@ -1,39 +1,33 @@
 #![no_std]
 
-// necesary crates
+// Librerías necesarias
 use sails_rs::prelude::*;
 
-// import our modules 
+// Importar nuestros módulos
 pub mod states;
 pub mod services;
 
-// Import service to be used for the program
-use services::traffic_light_service::TicketService;
+// Importar el servicio que será usado para el programa
+use services::ticket_service::TicketService;
 
-// Traffic light program struct to build the program (there can only be one per contract)
-pub struct TrafficLightProgram;
+// Definir el programa de tickets
+pub struct TicketProgram;
 
-// Traffic light program, it host one or more services and it expose them to the 
-// externar consumer.
-// Only one program is allowed per application
+// Implementar el programa de tickets
+// Solo puede haber un programa por contrato
 #[program]
-impl TrafficLightProgram {
-    // Application constructor (it is an associated function)
-    // It can be called once per application lifetime.
+impl TicketProgram {
+    // Constructor del programa (se llama una sola vez en la vida del contrato)
     pub fn new() -> Self {
-        // Init the state
+        // Inicializar el estado
         TicketService::seed();
 
         Self
     }
 
-    // Method working with "&self", having no other parameters are treated as exposed
-    // service constructors, and are called each time when an incoming request message 
-    // needs be dispatched to a selected service
-    // It has "message routing", This will change the way a service will be called 
-    // (if omitted, the method name will be used, in this case TrafficLightSvc).
-    #[route("TrafficLight")]
-    pub fn traffic_light_svc(&self) -> TicketService {
+    // Servicio expuesto para capturar la información del ticket
+    #[route("TicketService")]
+    pub fn ticket_service_svc(&self) -> TicketService {
         TicketService::new()
     }
 }
