@@ -15,9 +15,8 @@ export const Home = () => {
         <Center>
           <HStack>
             <VStack>
-              <GreenColor/>
+              <GreenColor />
             </VStack>
-            <TrafficLightReadState />
           </HStack>
         </Center>
       );
