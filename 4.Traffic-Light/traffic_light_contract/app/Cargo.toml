@@ -1,9 +1,17 @@
-[package]
-name = "app"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+[workspace]
+resolver = "2"
 
-[dependencies]
-gstd.workspace = true
-sails-rs.workspace = true
+members = [
+    "app", "wasm",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+gstd = "=1.6.2"
+sails-client-gen = "=0.6.1"
+sails-idl-gen = "=0.6.1"
+sails-rs = "=0.6.1"

@@ -8,7 +8,7 @@ pub mod states;
 pub mod services;
 
 // Import service to be used for the program
-use services::traffic_light_service::TrafficLightService;
+use services::traffic_light_service::TicketService;
 
 // Traffic light program struct to build the program (there can only be one per contract)
 pub struct TrafficLightProgram;
@@ -22,7 +22,7 @@ impl TrafficLightProgram {
     // It can be called once per application lifetime.
     pub fn new() -> Self {
         // Init the state
-        TrafficLightService::seed();
+        TicketService::seed();
 
         Self
     }
@@ -33,7 +33,7 @@ impl TrafficLightProgram {
     // It has "message routing", This will change the way a service will be called 
     // (if omitted, the method name will be used, in this case TrafficLightSvc).
     #[route("TrafficLight")]
-    pub fn traffic_light_svc(&self) -> TrafficLightService {
-        TrafficLightService::new()
+    pub fn traffic_light_svc(&self) -> TicketService {
+        TicketService::new()
     }
 }

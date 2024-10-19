@@ -1,3 +1,91 @@
+use sails_rs::{
+    prelude::*,
+    collections::HashMap,
+};
+
+// Estado global de los boletos
+pub static mut TICKET_STATE: Option<TicketState> = None;
+
+#[derive(Clone, Default)]
+pub struct TicketState {
+    pub tickets: HashMap<u64, Ticket>,
+    pub next_id: u64,
+}
+
+impl TicketState {
+    // Inicialización del estado
+    pub fn init_state() {
+        unsafe {
+            TICKET_STATE = Some(Self::default());
+        }
+    }
+
+    pub fn state_mut() -> &'static mut TicketState {
+        unsafe { TICKET_STATE.as_mut().expect("El estado no está inicializado") }
+    }
+
+    pub fn state_ref() -> &'static TicketState {
+        unsafe { TICKET_STATE.as_ref().expect("El estado no está inicializado") }
+    }
+
+    // Crear un nuevo boleto
+    pub fn new_ticket(event_name: String, place: String, date: String, price: u64) -> Ticket {
+        let mut state = Self::state_mut();
+        let ticket = Ticket {
+            id: state.next_id,
+            event_name,
+            place,
+            date,
+            price,
+            used: false,
+        };
+        state.next_id += 1;
+        ticket
+    }
+
+    pub fn get_ticket(&self, ticket_id: u64) -> Option<&Ticket> {
+        self.tickets.get(&ticket_id)
+    }
+}
+
+#[derive(Clone, Default, Encode, Decode, TypeInfo)]
+#[codec(crate = sails_rs::scale_codec)]
+#[scale_info(crate = sails_rs::scale_info)]
+pub struct Ticket {
+    pub id: u64,
+    pub event_name: String,
+    pub place: String,
+    pub date: String,
+    pub price: u64,
+    pub used: bool,
+}
+
+#[derive(Encode, Decode, TypeInfo)]
+#[codec(crate = sails_rs::scale_codec)]
+#[scale_info(crate = sails_rs::scale_info)]
+pub struct IoTicketState {
+    pub id: u64,
+    pub event_name: String,
+    pub place: String,
+    pub date: String,
+    pub price: u64,
+    pub used: bool,
+}
+
+impl From<&Ticket> for IoTicketState {
+    fn from(ticket: &Ticket) -> Self {
+        IoTicketState {
+            id: ticket.id,
+            event_name: ticket.event_name.clone(),
+            place: ticket.place.clone(),
+            date: ticket.date.clone(),
+            price: ticket.price,
+            used: ticket.used,
+        }
+    }
+}
+
+/*
 // necesary cretes
 use sails_rs::{
     prelude::*,
@@ -80,3 +168,4 @@ impl From<TrafficLightState> for IoTrafficLightState {
         }
     }
 }
+*/

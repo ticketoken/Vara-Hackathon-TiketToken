@@ -53,17 +53,32 @@ impl<R> TrafficLight<R> {
 }
 impl<R: Remoting + Clone> traits::TrafficLight for TrafficLight<R> {
     type Args = R::Args;
-    fn green(&mut self) -> impl Call<Output = TrafficLightEvent, Args = R::Args> {
-        RemotingAction::<_, traffic_light::io::Green>::new(self.remoting.clone(), ())
+    fn issue_ticket(
+        &mut self,
+        event_name: String,
+        place: String,
+        date: String,
+        price: u64,
+    ) -> impl Call<Output = TicketEvent, Args = R::Args> {
+        RemotingAction::<_, traffic_light::io::IssueTicket>::new(
+            self.remoting.clone(),
+            (event_name, place, date, price),
+        )
     }
-    fn red(&mut self) -> impl Call<Output = TrafficLightEvent, Args = R::Args> {
-        RemotingAction::<_, traffic_light::io::Red>::new(self.remoting.clone(), ())
+    fn validate_ticket(
+        &mut self,
+        ticket_id: u64,
+    ) -> impl Call<Output = TicketEvent, Args = R::Args> {
+        RemotingAction::<_, traffic_light::io::ValidateTicket>::new(
+            self.remoting.clone(),
+            ticket_id,
+        )
     }
-    fn yellow(&mut self) -> impl Call<Output = TrafficLightEvent, Args = R::Args> {
-        RemotingAction::<_, traffic_light::io::Yellow>::new(self.remoting.clone(), ())
-    }
-    fn traffic_light(&self) -> impl Query<Output = IoTrafficLightState, Args = R::Args> {
-        RemotingAction::<_, traffic_light::io::TrafficLight>::new(self.remoting.clone(), ())
+    fn query_ticket(
+        &self,
+        ticket_id: u64,
+    ) -> impl Query<Output = Option<IoTicketState>, Args = R::Args> {
+        RemotingAction::<_, traffic_light::io::QueryTicket>::new(self.remoting.clone(), ticket_id)
     }
 }
 
@@ -73,81 +88,88 @@ pub mod traffic_light {
     pub mod io {
         use super::*;
         use sails_rs::calls::ActionIo;
-        pub struct Green(());
-        impl Green {
+        pub struct IssueTicket(());
+        impl IssueTicket {
             #[allow(dead_code)]
-            pub fn encode_call() -> Vec<u8> {
-                <Green as ActionIo>::encode_call(&())
+            pub fn encode_call(
+                event_name: String,
+                place: String,
+                date: String,
+                price: u64,
+            ) -> Vec<u8> {
+                <IssueTicket as ActionIo>::encode_call(&(event_name, place, date, price))
             }
         }
-        impl ActionIo for Green {
+        impl ActionIo for IssueTicket {
             const ROUTE: &'static [u8] = &[
-                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 20, 71, 114, 101, 101,
-                110,
+                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 44, 73, 115, 115, 117,
+                101, 84, 105, 99, 107, 101, 116,
             ];
-            type Params = ();
-            type Reply = super::TrafficLightEvent;
+            type Params = (String, String, String, u64);
+            type Reply = super::TicketEvent;
         }
-        pub struct Red(());
-        impl Red {
+        pub struct ValidateTicket(());
+        impl ValidateTicket {
             #[allow(dead_code)]
-            pub fn encode_call() -> Vec<u8> {
-                <Red as ActionIo>::encode_call(&())
+            pub fn encode_call(ticket_id: u64) -> Vec<u8> {
+                <ValidateTicket as ActionIo>::encode_call(&ticket_id)
             }
         }
-        impl ActionIo for Red {
+        impl ActionIo for ValidateTicket {
             const ROUTE: &'static [u8] = &[
-                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 12, 82, 101, 100,
+                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 56, 86, 97, 108, 105,
+                100, 97, 116, 101, 84, 105, 99, 107, 101, 116,
             ];
-            type Params = ();
-            type Reply = super::TrafficLightEvent;
+            type Params = u64;
+            type Reply = super::TicketEvent;
         }
-        pub struct Yellow(());
-        impl Yellow {
+        pub struct QueryTicket(());
+        impl QueryTicket {
             #[allow(dead_code)]
-            pub fn encode_call() -> Vec<u8> {
-                <Yellow as ActionIo>::encode_call(&())
+            pub fn encode_call(ticket_id: u64) -> Vec<u8> {
+                <QueryTicket as ActionIo>::encode_call(&ticket_id)
             }
         }
-        impl ActionIo for Yellow {
+        impl ActionIo for QueryTicket {
             const ROUTE: &'static [u8] = &[
-                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 24, 89, 101, 108, 108,
-                111, 119,
+                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 44, 81, 117, 101, 114,
+                121, 84, 105, 99, 107, 101, 116,
             ];
-            type Params = ();
-            type Reply = super::TrafficLightEvent;
-        }
-        pub struct TrafficLight(());
-        impl TrafficLight {
-            #[allow(dead_code)]
-            pub fn encode_call() -> Vec<u8> {
-                <TrafficLight as ActionIo>::encode_call(&())
-            }
-        }
-        impl ActionIo for TrafficLight {
-            const ROUTE: &'static [u8] = &[
-                48, 84, 114, 97, 102, 102, 105, 99, 76, 105, 103, 104, 116, 48, 84, 114, 97, 102,
-                102, 105, 99, 76, 105, 103, 104, 116,
-            ];
-            type Params = ();
-            type Reply = super::IoTrafficLightState;
+            type Params = u64;
+            type Reply = Option<super::IoTicketState>;
         }
     }
 }
 #[derive(PartialEq, Debug, Encode, Decode, TypeInfo)]
 #[codec(crate = sails_rs::scale_codec)]
 #[scale_info(crate = sails_rs::scale_info)]
-pub enum TrafficLightEvent {
-    Green,
-    Yellow,
-    Red,
+pub enum TicketEvent {
+    Issued(Ticket),
+    Validated(u64),
+    NotFound,
+    Invalid,
 }
 #[derive(PartialEq, Debug, Encode, Decode, TypeInfo)]
 #[codec(crate = sails_rs::scale_codec)]
 #[scale_info(crate = sails_rs::scale_info)]
-pub struct IoTrafficLightState {
-    pub current_light: String,
-    pub all_users: Vec<(ActorId, String)>,
+pub struct Ticket {
+    pub id: u64,
+    pub event_name: String,
+    pub place: String,
+    pub date: String,
+    pub price: u64,
+    pub used: bool,
+}
+#[derive(PartialEq, Debug, Encode, Decode, TypeInfo)]
+#[codec(crate = sails_rs::scale_codec)]
+#[scale_info(crate = sails_rs::scale_info)]
+pub struct IoTicketState {
+    pub id: u64,
+    pub event_name: String,
+    pub place: String,
+    pub date: String,
+    pub price: u64,
+    pub used: bool,
 }
 
 pub mod traits {
@@ -163,9 +185,20 @@ pub mod traits {
     #[allow(clippy::type_complexity)]
     pub trait TrafficLight {
         type Args;
-        fn green(&mut self) -> impl Call<Output = TrafficLightEvent, Args = Self::Args>;
-        fn red(&mut self) -> impl Call<Output = TrafficLightEvent, Args = Self::Args>;
-        fn yellow(&mut self) -> impl Call<Output = TrafficLightEvent, Args = Self::Args>;
-        fn traffic_light(&self) -> impl Query<Output = IoTrafficLightState, Args = Self::Args>;
+        fn issue_ticket(
+            &mut self,
+            event_name: String,
+            place: String,
+            date: String,
+            price: u64,
+        ) -> impl Call<Output = TicketEvent, Args = Self::Args>;
+        fn validate_ticket(
+            &mut self,
+            ticket_id: u64,
+        ) -> impl Call<Output = TicketEvent, Args = Self::Args>;
+        fn query_ticket(
+            &self,
+            ticket_id: u64,
+        ) -> impl Query<Output = Option<IoTicketState>, Args = Self::Args>;
     }
 }

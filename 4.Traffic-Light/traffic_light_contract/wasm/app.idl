@@ -1,12 +1,26 @@
-type TrafficLightEvent = enum {
-  Green,
-  Yellow,
-  Red,
+type TicketEvent = enum {
+  Issued: Ticket,
+  Validated: u64,
+  NotFound,
+  Invalid,
 };
 
-type IoTrafficLightState = struct {
-  current_light: str,
-  all_users: vec struct { actor_id, str },
+type Ticket = struct {
+  id: u64,
+  event_name: str,
+  place: str,
+  date: str,
+  price: u64,
+  used: bool,
+};
+
+type IoTicketState = struct {
+  id: u64,
+  event_name: str,
+  place: str,
+  date: str,
+  price: u64,
+  used: bool,
 };
 
 constructor {
@@ -14,9 +28,8 @@ constructor {
 };
 
 service TrafficLight {
-  Green : () -> TrafficLightEvent;
-  Red : () -> TrafficLightEvent;
-  Yellow : () -> TrafficLightEvent;
-  query TrafficLight : () -> IoTrafficLightState;
+  IssueTicket : (event_name: str, place: str, date: str, price: u64) -> TicketEvent;
+  ValidateTicket : (ticket_id: u64) -> TicketEvent;
+  query QueryTicket : (ticket_id: u64) -> opt IoTicketState;
 };
 
