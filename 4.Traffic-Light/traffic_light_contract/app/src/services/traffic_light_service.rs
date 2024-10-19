@@ -1,195 +1,100 @@
+// Librerías necesarias
 use sails_rs::{
     prelude::*,
     gstd::msg,
 };
 
-// Importar el estado
-use crate::states::traffic_light_state::Ticket;
-use crate::states::traffic_light_state::{
+
+// Importar el estado necesario para el servicio de boletos
+use crate::states::ticket_state::{
     TicketState,
     IoTicketState
 };
 
+// Definir el servicio de boletos
 #[derive(Default)]
 pub struct TicketService;
 
+// Inicialización del estado del servicio
 impl TicketService {
-    // Inicialización del estado del servicio (se llama una vez)
+    // Función para inicializar el estado del servicio (solo llamada una vez)
     pub fn seed() {
         TicketState::init_state();
     }
 }
 
+// Servicio de boletos expuesto a usuarios externos
 #[service]
 impl TicketService {
+    // Constructor del servicio
     pub fn new() -> Self {
         Self
     }
 
-    // Emitir un nuevo boleto NFT
-    pub fn issue_ticket(&mut self, event_name: String, place: String, date: String, price: u64) -> TicketEvent {
-        let ticket = TicketState::new_ticket(event_name, place, date, price);
-        TicketState::state_mut().tickets.insert(ticket.id, ticket.clone());
+    // Función para capturar la información del boleto y generar un NFT
+    pub fn generate_ticket(&mut self, actor_id: String, customer_name: String, seat: String, section: String) -> TicketEvent {
+        // Generar número de compra
+        let purchase_number = self.generate_purchase_number();
 
-        TicketEvent::Issued(ticket)
+        // Guardar el estado del boleto con la información proporcionada
+        let ticket_info = format!(
+            "Actor ID: {}\nCustomer Name: {}\nSeat: {}\nSection: {}\nPurchase Number: {}",
+            actor_id, customer_name, seat, section, purchase_number
+        );
+
+        TicketState::state_mut().current_ticket = ticket_info.clone();
+        TicketState::state_mut()
+            .all_tickets
+            .insert(msg::source().into(), ticket_info);
+
+        // Retornar el evento Ticket generado
+        TicketEvent::TicketGenerated(purchase_number)
     }
 
-    // Validar un boleto (marcarlo como usado)
-    pub fn validate_ticket(&mut self, ticket_id: u64) -> TicketEvent {
-        let ticket_state = TicketState::state_mut();
-
-        if let Some(ticket) = ticket_state.tickets.get_mut(&ticket_id) {
-            if ticket.used {
-                TicketEvent::Invalid
-            } else {
-                ticket.used = true;
-                TicketEvent::Validated(ticket_id)
-            }
-        } else {
-            TicketEvent::NotFound
-        }
+    // Función para devolver siempre el número de compra como 1
+    pub fn generate_purchase_number(&self) -> u32 
+        {
+        1 // Devuelve siempre el valor 1
     }
 
-    // Consultar el estado de un boleto
-    pub fn query_ticket(&self, ticket_id: u64) -> Option<IoTicketState> {
-        // Obtenemos el ticket como una opción
-        if let Some(ticket) = TicketState::state_ref().get_ticket(ticket_id) {
-            // Si se encuentra el ticket, lo convertimos a IoTicketState y lo devolvemos
-            Some(ticket.into())
-        } else {
-            // Si no se encuentra, devolvemos None
-            None
-        }
-    }
-    
-}
-
-#[derive(Encode, Decode, TypeInfo)]
-#[codec(crate = sails_rs::scale_codec)]
-#[scale_info(crate = sails_rs::scale_info)]
-pub enum TicketEvent {
-    Issued(Ticket),
-    Validated(u64),
-    NotFound,
-    Invalid,
-}
-
-/*
-// necesary cretes
-use sails_rs::{
-    prelude::*,
-    gstd::msg
-};
-
-// import the state
-use crate::states::traffic_light_state::{
-    TrafficLightState,
-    IoTrafficLightState
-};
-
-// Traffic light service struct to build the service 
-#[derive(Default)]
-pub struct TrafficLightService;
-
-// Impl for seed related function to init the state
-impl TrafficLightService {
-    // Related function to init the service state (call only once)
-    // Another related function is created that initializes the state 
-    // to avoid unnecessary imports in the "lib.rs" file, you can see 
-    // that it remains more "structured"
-    pub fn seed() {
-        TrafficLightState::init_state();
-    }
-}
-
-// Trffic light service
-#[service]
-impl TrafficLightService {
-    // Service constructor
-    pub fn new() -> Self {
-        Self
+    // Función para generar el código QR del NFT
+    pub fn generate_qr_code(&self) -> String {
+        let ticket_info = &TicketState::state_ref().current_ticket;
+        
+        // Simulación de un código QR basado en la información del boleto
+        let qr_code = format!("QR Code for Ticket:\n{}", ticket_info);
+        
+        // Simular el almacenamiento del QR
+        TicketState::state_mut().current_qr = qr_code.clone();
+        
+        qr_code
     }
 
-    // Remote call "green" exposed to external consumers
-    // Returns a struct that will be sent as a response to the user
-    // Is treated as a command changing the state (&mut self)
-    pub fn green(&mut self) -> TrafficLightEvent {
-        // // Get state as mut
-        // let traffic_light_state = traffic_light_state_mut();
+    // Función expuesta a usuarios externos para actualizar el QR cada 30 segundos
+    pub fn update_qr_code(&mut self) -> TicketEvent {
+        let qr_code = self.generate_qr_code();
+        
+        TicketState::state_mut()
+            .qr_history
+            .insert(msg::source().into(), qr_code.clone());
 
-        let current_light = "Green".to_string();
-
-        // Changing state
-        TrafficLightState::state_mut()
-            .current_light = current_light.clone();
-
-        TrafficLightState::state_mut()
-            .all_users
-            .insert(msg::source().into(), current_light);
-
-        // returning the response
-        TrafficLightEvent::Green
+        TicketEvent::QrUpdated
     }
 
-    // Remote call "yellow" exposed to external consumers
-    // Returns a struct that will be sent as a response to the user
-    // Is treated as a command changing the state (&mut self)
-    pub fn yellow(&mut self) -> TrafficLightEvent {
-        // // Get state as mut
-        // let traffic_light_state = traffic_light_state_mut();
-
-        let current_light = "Yellow".to_string();
-
-        // Changing state
-        TrafficLightState::state_mut()
-            .current_light = current_light.clone();
-        TrafficLightState::state_mut()
-            .all_users
-            .insert(msg::source().into(), current_light);
-
-        // returning the response
-        TrafficLightEvent::Yellow
-    }
-
-    // Remote call "yellow" exposed to external consumers
-    // Returns a struct that will be sent as a response to the user
-    // Is treated as a command changing the state (&mut self)
-    pub fn red(&mut self) -> TrafficLightEvent {
-        // // Get state as mut
-        // let traffic_light_state = traffic_light_state_mut();
-
-        let current_light = "Red".to_string();
-
-        // Changing state
-        TrafficLightState::state_mut()
-            .current_light = current_light.clone();
-        TrafficLightState::state_mut()
-            .all_users
-            .insert(msg::source().into(), current_light);
-
-        // returning the response
-        TrafficLightEvent::Red
-    }
-
-    // Remote call "traffic_light" exposed to external consumers
-    // Returns a struct that will be sent as a response to the user
-    // Is treated as a query, keeping everything unchanged and returning some data. (&self)
-    pub fn traffic_light(&self) -> IoTrafficLightState {
-        TrafficLightState::state_ref()
+    // Función para consultar el estado del boleto actual
+    pub fn ticket_info(&self) -> IoTicketState {
+        TicketState::state_ref()
             .to_owned()
             .into()
     }
 }
 
-// struct to use as a response to the user
+// Enum para los eventos que serán enviados como respuesta al usuario
 #[derive(Encode, Decode, TypeInfo)]
 #[codec(crate = sails_rs::scale_codec)]
 #[scale_info(crate = sails_rs::scale_info)]
 
-pub enum TrafficLightEvent {
-    Green,
-    Yellow,
-    Red
+pub enum TicketEvent {
+    TicketGenerated(u32), // Evento generado al crear un ticket (incluye número de compra)
+    QrUpdated,            // Evento que indica que el QR ha sido actualizado
 }
-*/
-
